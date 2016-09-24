@@ -1,0 +1,13 @@
+h1 {
+  font-weight: bold;
+}
+
+h4 {
+  color: black;
+}
+
+tr:nth-child(even){background-color: whitesmoke;}
+
+th {
+  background-color: whitesmoke;
+}
