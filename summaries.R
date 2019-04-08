@@ -149,7 +149,7 @@ plot_serial <- function(data, x, y, group) {
     return(g)
 }
 
-# A function to compare paired values in a time-series (plots and Wilcoxon test)
+# A function to compare paired values in sequential measurements (plots and test)
 # x = periods of the time series (v.g., pre and post)
 # y = values to be compared
 # group = grouping variable (v.g., patient's ID)
@@ -180,4 +180,52 @@ compare_ts <- function(data, x, y, group) {
     # Printing the results
     print(g)
     print(test)
+}
+
+# A function for ploting sequential values of the marker
+# When 2 periods are compared, the Wilcoxon test is used
+# When > 2 periods are provided, the Kruskal-Wallis test is used
+# x = periods of the time series (v.g., pre and post)
+# y = values to be compared (they will be scaled)
+# group = grouping variable (v.g., patient's ID)
+plot_ts <- function(data, x, y, group,
+                    title = NULL, tag = NULL, 
+                    xlim = -1, ylim = 4, labelx = 1.5) {
+    
+    x = enquo(x)
+    y = enquo(y)
+    group = enquo(group)
+    df <- data %>% 
+        select(x = !! x, y = !! y, group = !! group)
+
+    # Wilcox test for associations
+    if (nlevels(df$x) == 2) {
+        df_test <- df %>%
+            select(group, x, y) %>% 
+            spread(key = x, value = y)
+        test <- wilcox.test(df_test[[2]], df_test[[3]], paired = TRUE)
+    }
+    
+    if (nlevels(df$x) > 2) {
+        test <- kruskal.test(y ~ x, data = df)
+    }
+    
+    p_test <- test$p.value %>% 
+            formatC(digits = 2)
+    p <- paste("P value =", p_test)
+
+    # Plot
+    g <- df %>% 
+        ggplot(aes(x = x, y = scale(y), group = group)) +
+        geom_line(size = 0.5, linetype = "dotted") + 
+        geom_point(
+            size = 5, shape = 21,
+            color = "black", fill = "white"
+        ) +
+        labs(title = title, x = "", y = "", tag = tag) +
+        scale_y_continuous(limits = c(xlim, ylim), breaks = xlim:ylim) +
+        geom_label(label = p, x = labelx, y = ylim, vjust = 1)
+        
+    # Returning the plot
+    return(g)
 }
